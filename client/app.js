@@ -1,27 +1,9 @@
-var angular = require('angular')
+var angular = require('angular');
+// only requiring angular here, as it is a core package,
+// so no need to track its usage throughout modules
 
-var app = angular.module('app', [
-    require('angular-ui-router')
-])
+var {appName} = require('./constants');
 
-app.config(
-    function($urlRouterProvider, $stateProvider, $locationProvider){
+angular.module(appName, []);
 
-        $urlRouterProvider.otherwise('/')
-        $locationProvider.html5Mode({
-            enabled: true,
-            requireBase: false
-        })
-
-        $stateProvider
-        .state('app', {
-            url: '/',
-            views: {
-                header: {
-                    template: require('./header/header.html')
-                }
-            }
-        })
-
-    }
-)
+require('./main/main');
