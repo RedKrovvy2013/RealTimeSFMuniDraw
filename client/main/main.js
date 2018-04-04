@@ -25,7 +25,6 @@ angular.module(appName).directive('main', function($http) {
                 .projection(projection);
 
             var mapG = graph.append('g');
-            var busG = graph.append('g');
 
             d3.json("sfmaps/streets.json")
             .then(function(data) {
@@ -38,17 +37,41 @@ angular.module(appName).directive('main', function($http) {
             });
             // TODO: handle file read error
 
-            $http.get('http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&r=N')
-            .then(function(res) {
-                busG.selectAll('path')
-                    .data(convertToGeoPoints(res.data.vehicle))
-                    .enter().append('path')
-                    .attr('d', path)
-                    .attr('class', 'bus');
-            })
+            function doBuses() {
+                graph.selectAll('.bus-group')
+                    .remove();
+                $http.get('http://webservices.nextbus.com/service/publicJSONFeed?command=routeList&a=sf-muni')
+                .then(function(res) {
+                    var routes = res.data.route;
+                    routes.forEach(function(route) {
+                        $http.get(`http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&r=${route.tag}&t=0`)
+                        .then(function(res) {
+                            graph.append('g')
+                                .attr('class', 'bus-group')
+                                .selectAll('path')
+                                .data(convertToGeoPoints(res.data.vehicle))
+                                .enter().append('path')
+                                .attr('d', path)
+                                .attr('class', 'bus');
+                        })
+                        .catch(function(e) {
+                            console.log(`Route ${route.tag} data could not be fetched`);
+                            console.log(e);
+                        })
+                    });
+                });
+            }
+            doBuses();
+            setInterval(function() {
+                doBuses();
+            }, 15000);
 
             function convertToGeoPoints(vehicles) {
+                if(typeof vehicles === "undefined")
+                   return []; // handle routes that aren't active
                 var geoPoints = [];
+                vehicles = vehicles instanceof Array ? vehicles : [vehicles];
+                // vehicles may be just one obj instead of arr, so handling above
                 vehicles.forEach(function(vehicle) {
                     geoPoints.push({
                         type: "Feature",
