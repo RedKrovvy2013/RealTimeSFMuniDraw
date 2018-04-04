@@ -1,0 +1,15 @@
+
+$p-size: 1.6rem;
+$h1-size: $p-size * 2.35;
+$h2-size: $p-size * 2;
+$h3-size: $p-size * 1.7;
+$h4-size: $p-size * 1.4;
+$h5-size: $p-size * 1.2;
+
+// GRID
+
+$grid-width: 150rem;
+$horizontal-edge-gutter: 1rem;
+$gutter-vertical-small: 5rem;
+$gutter-horizontal: 2 * $horizontal-edge-gutter;
+$gutter-vertical: $gutter-horizontal;

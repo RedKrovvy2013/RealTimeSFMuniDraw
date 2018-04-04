@@ -1,0 +1,12 @@
+node_modules
+.idea
+*.iml
+.client
+config.json
+.DS_Store
+regFiles.py
+out.txt
+npm-debug.log
+npm-debug.log.*
+bundle.js
+*.css
