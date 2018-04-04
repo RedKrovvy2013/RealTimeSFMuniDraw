@@ -75,6 +75,11 @@ svg {
     background-color: grey;
 }
 
-path {
+.street {
     stroke: black;
+    fill: transparent;
+}
+
+.bus {
+    fill: blue;
 }
