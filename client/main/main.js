@@ -83,6 +83,13 @@ angular.module(appName).directive('main', function($http) {
                     var processed = 0;
                     function maybeFinish() {
                         if(++processed === routes.length) {
+                            var tags = [];
+                            Route.prototype.activeRoutes.forEach(function(route) {
+                                tags.push(route.tag);
+                            });
+                            Bus.prototype.doColorScale = d3.scaleOrdinal()
+                                .domain(tags)
+                                .range(['#2BD8FF', '#CEF6FF', '#DD2BFF']);
                             Bus.prototype.doBuses();
                         }
                     }
@@ -100,9 +107,12 @@ angular.module(appName).directive('main', function($http) {
                         graph.append('g')
                             .attr('class', `bus-route bus-route-${route.tag}`)
                             .selectAll('path')
-                            .data(Bus.prototype.convertToGeoPoints(vehicles))
+                            .data(Bus.prototype.convertToGeoPoints(vehicles, route.tag))
                             .enter().append('path')
                             .attr('d', path)
+                            .style('fill', function(d) {
+                                return Bus.prototype.doColorScale(d.routeTag);
+                            })
                             .attr('class', 'bus');
                     })
                     .catch(function(e) {
@@ -111,12 +121,11 @@ angular.module(appName).directive('main', function($http) {
                     })
                 });
             }
-            Bus.prototype.doBuses();
-            setInterval(function() {
-                Bus.prototype.doBuses();
-            }, 10000);
+            // setInterval(function() {
+            //     Bus.prototype.doBuses();
+            // }, 7000);
 
-            Bus.prototype.convertToGeoPoints = function(vehicles) {
+            Bus.prototype.convertToGeoPoints = function(vehicles, routeTag) {
                 if(typeof vehicles === "undefined") {
                     return []; // handle routes that aren't active
                     // still is useful as current code doesn't synch active routes after init,
@@ -131,7 +140,8 @@ angular.module(appName).directive('main', function($http) {
                         geometry: {
                             type: "Point",
                             coordinates: [vehicle.lon, vehicle.lat]
-                        }
+                        },
+                        routeTag
                     });
                 });
                 return geoPoints;

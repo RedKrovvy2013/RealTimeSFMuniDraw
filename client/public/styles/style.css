@@ -8,7 +8,7 @@ svg {
 }
 
 .bus {
-    fill: blue;
+    opacity: .777;
 }
 
 svg, #route-selector {
