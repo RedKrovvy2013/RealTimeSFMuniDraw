@@ -38,46 +38,90 @@ angular.module(appName).directive('main', function($http) {
             });
             // TODO: handle file read error
 
-            function doBuses() {
-                graph.selectAll('.bus-group')
-                    .remove();
+            function Route(data) {
+                this.tag = data.tag;
+                this.title = data.title;
+            }
+
+            Route.prototype.activeRoutes = [];
+            $scope.activeRoutes = Route.prototype.activeRoutes;
+
+            function Bus() {
+
+            }
+
+            // Bus.prototype.urlPrefix = `http://webservices.nextbus.com/service/publicJSONFeed`;
+            // var urlPrefix = Bus.prototype.urlPrefix;
+            // TODO: use urlPrefix instead of longer strings in call instances; wasn't working at first try
+
+            Bus.prototype.activeRoutes = Route.prototype.activeRoutes;
+            Bus.prototype.alreadyInited = false;
+            Bus.prototype.init = function() {
+                if(this.alreadyInited)
+                    return; //guard against this being called more than once
+                this.alreadyInited = true;
                 $http.get('http://webservices.nextbus.com/service/publicJSONFeed?command=routeList&a=sf-muni')
                 .then(function(res) {
                     var routes = res.data.route;
                     routes.forEach(function(route) {
-                        $http.get(`http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&r=${route.tag}&t=0`)
+                        $http.get(`http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&r=${route.tag}`)
                         .then(function(res) {
-                            var vehicles = res.data.vehicle;
-                            graph.append('g')
-                                .attr('class', 'bus-group')
-                                .selectAll('path')
-                                .data(convertToGeoPoints(vehicles))
-                                .enter().append('path')
-                                .attr('d', path)
-                                .attr('class', `bus route-tag-${getRouteTag(vehicles)}`);
+                            if(typeof res.data.vehicle !== "undefined") {
+                                Route.prototype.activeRoutes.push(new Route(route));
+                                // above filters out routes that aren't active,
+                                // so they don't errantly show as toggle-able in route selector
+                                // TODO: dynamically update activeRoutes as routes
+                                //       become active and inactive
+                            }
+                            maybeFinish();
                         })
                         .catch(function(e) {
-                            console.log(`Route ${route.tag} data could not be fetched`);
-                            console.log(e);
+                            // TODO: error handling
+                            maybeFinish();
                         })
-                    });
+                    })
+                    var processed = 0;
+                    function maybeFinish() {
+                        if(++processed === routes.length) {
+                            Bus.prototype.doBuses();
+                        }
+                    }
+                })
+            }
+            Bus.prototype.init();
+
+            Bus.prototype.doBuses = function() {
+                graph.selectAll('.bus-route')
+                    .remove();
+                Route.prototype.activeRoutes.forEach(function(route) {
+                    $http.get(`http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&r=${route.tag}`)
+                    .then(function(res) {
+                        var vehicles = res.data.vehicle;
+                        graph.append('g')
+                            .attr('class', `bus-route bus-route-${route.tag}`)
+                            .selectAll('path')
+                            .data(Bus.prototype.convertToGeoPoints(vehicles))
+                            .enter().append('path')
+                            .attr('d', path)
+                            .attr('class', 'bus');
+                    })
+                    .catch(function(e) {
+                        console.log(`Route ${route.tag} data could not be fetched`);
+                        console.log(e);
+                    })
                 });
             }
-            doBuses();
+            Bus.prototype.doBuses();
             setInterval(function() {
-                doBuses();
+                Bus.prototype.doBuses();
             }, 10000);
 
-            function getRouteTag(vehicles) {
-                if(typeof vehicles === "undefined")
-                    return "undefined";
-                vehicles = vehicles instanceof Array ? vehicles : [vehicles];
-                return vehicles[0].routeTag;
-            }
-
-            function convertToGeoPoints(vehicles) {
-                if(typeof vehicles === "undefined")
-                   return []; // handle routes that aren't active
+            Bus.prototype.convertToGeoPoints = function(vehicles) {
+                if(typeof vehicles === "undefined") {
+                    return []; // handle routes that aren't active
+                    // still is useful as current code doesn't synch active routes after init,
+                    // so this handles routes that become inactive after app init
+                }
                 var geoPoints = [];
                 vehicles = vehicles instanceof Array ? vehicles : [vehicles];
                 // vehicles may be just one obj instead of arr, so handling via above
@@ -94,18 +138,18 @@ angular.module(appName).directive('main', function($http) {
             }
 
             $scope.showRoute = function(routeTag) {
-                d3.selectAll(`.route-tag-${routeTag}`)
+                d3.select(`g.bus-route-${routeTag}`)
                     .classed('hide', false);
             }
             $scope.hideRoute = function(routeTag) {
-                d3.selectAll(`.route-tag-${routeTag}`)
+                d3.select(`g.bus-route-${routeTag}`)
                     .classed('hide', true);
             }
 
-            $http.get('http://webservices.nextbus.com/service/publicJSONFeed?command=routeList&a=sf-muni')
-            .then(function(res) {
-                $scope.routes = res.data.route;
-            });
+            // $http.get('http://webservices.nextbus.com/service/publicJSONFeed?command=routeList&a=sf-muni')
+            // .then(function(res) {
+            //     $scope.routes = res.data.route;
+            // });
 
         }
     };

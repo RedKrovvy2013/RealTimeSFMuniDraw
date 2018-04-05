@@ -1,8 +1,8 @@
 <div>
     <svg></svg>
     <div id="route-selector">
-        <checkbox-kit ng-repeat="route in routes"
-            title="{{route.title}} ({{route.tag}})"
+        <checkbox-kit ng-repeat="route in activeRoutes"
+            title="{{route.title}}"
             id="route.tag"
             on-check="showRoute(id)"
             on-uncheck="hideRoute(id)">
