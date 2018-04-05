@@ -1,11 +1,12 @@
 var d3 = require('d3');
 
 var {appName} = require('./../constants');
+require('./../checkboxKit/checkboxKit');
 
 angular.module(appName).directive('main', function($http) {
     return {
         restrict: 'E',
-        template: '<svg></svg>',
+        template: require('./main.html'),
         link: function($scope, elem, attrs, ctrl) {
 
             var width = 850;
@@ -46,13 +47,14 @@ angular.module(appName).directive('main', function($http) {
                     routes.forEach(function(route) {
                         $http.get(`http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&r=${route.tag}&t=0`)
                         .then(function(res) {
+                            var vehicles = res.data.vehicle;
                             graph.append('g')
                                 .attr('class', 'bus-group')
                                 .selectAll('path')
-                                .data(convertToGeoPoints(res.data.vehicle))
+                                .data(convertToGeoPoints(vehicles))
                                 .enter().append('path')
                                 .attr('d', path)
-                                .attr('class', 'bus');
+                                .attr('class', `bus route-tag-${getRouteTag(vehicles)}`);
                         })
                         .catch(function(e) {
                             console.log(`Route ${route.tag} data could not be fetched`);
@@ -64,14 +66,21 @@ angular.module(appName).directive('main', function($http) {
             doBuses();
             setInterval(function() {
                 doBuses();
-            }, 15000);
+            }, 10000);
+
+            function getRouteTag(vehicles) {
+                if(typeof vehicles === "undefined")
+                    return "undefined";
+                vehicles = vehicles instanceof Array ? vehicles : [vehicles];
+                return vehicles[0].routeTag;
+            }
 
             function convertToGeoPoints(vehicles) {
                 if(typeof vehicles === "undefined")
                    return []; // handle routes that aren't active
                 var geoPoints = [];
                 vehicles = vehicles instanceof Array ? vehicles : [vehicles];
-                // vehicles may be just one obj instead of arr, so handling above
+                // vehicles may be just one obj instead of arr, so handling via above
                 vehicles.forEach(function(vehicle) {
                     geoPoints.push({
                         type: "Feature",
@@ -83,6 +92,20 @@ angular.module(appName).directive('main', function($http) {
                 });
                 return geoPoints;
             }
+
+            $scope.showRoute = function(routeTag) {
+                d3.selectAll(`.route-tag-${routeTag}`)
+                    .classed('hide', false);
+            }
+            $scope.hideRoute = function(routeTag) {
+                d3.selectAll(`.route-tag-${routeTag}`)
+                    .classed('hide', true);
+            }
+
+            $http.get('http://webservices.nextbus.com/service/publicJSONFeed?command=routeList&a=sf-muni')
+            .then(function(res) {
+                $scope.routes = res.data.route;
+            });
 
         }
     };

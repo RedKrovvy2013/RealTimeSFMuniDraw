@@ -9,4 +9,3 @@ out.txt
 npm-debug.log
 npm-debug.log.*
 bundle.js
-*.css

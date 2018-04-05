@@ -1,0 +1,26 @@
+svg {
+    background-color: grey;
+}
+
+.street {
+    stroke: black;
+    fill: transparent;
+}
+
+.bus {
+    fill: blue;
+}
+
+svg, #route-selector {
+    float: left;
+}
+
+#route-selector {
+    margin-left: 15px;
+    height: 1000px;
+    overflow-y:auto;
+}
+
+.hide {
+    visibility: hidden;
+}
