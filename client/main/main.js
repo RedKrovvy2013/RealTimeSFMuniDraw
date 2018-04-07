@@ -38,9 +38,10 @@ angular.module(appName).directive('main', function($http) {
             });
             // TODO: handle file read error
 
-            function Route(data) {
+            function Route(data, vehicleLocationsUrl) {
                 this.tag = data.tag;
                 this.title = data.title;
+                this.vehicleLocationsUrl = vehicleLocationsUrl;
             }
             Route.prototype.activeRoutes = [];
             $scope.activeRoutes = Route.prototype.activeRoutes;
@@ -58,10 +59,14 @@ angular.module(appName).directive('main', function($http) {
                 .then(function(res) {
                     var routes = res.data.route;
                     routes.forEach(function(route) {
-                        $http.get(`http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&r=${route.tag}`)
+                        var vehicleLocationsUrl =
+    `http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&r=${route.tag}`;
+                        $http.get(vehicleLocationsUrl)
                         .then(function(res) {
                             if(typeof res.data.vehicle !== "undefined") {
-                                Route.prototype.activeRoutes.push(new Route(route));
+                                Route.prototype.activeRoutes.push(
+                                    new Route(route, vehicleLocationsUrl)
+                                );
                                 // above filters out routes that aren't active,
                                 // so they don't errantly show as toggle-able in route selector
                                 // TODO: dynamically update activeRoutes as routes
@@ -72,7 +77,7 @@ angular.module(appName).directive('main', function($http) {
                         .catch(function(e) {
                             // TODO: error handling
                             maybeFinish();
-                        })
+                        });
                     })
                     var processed = 0;
                     function maybeFinish() {
@@ -95,7 +100,7 @@ angular.module(appName).directive('main', function($http) {
                 graph.selectAll('.bus-route')
                     .remove();
                 Route.prototype.activeRoutes.forEach(function(route) {
-                    $http.get(`http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&r=${route.tag}`)
+                    $http.get(route.vehicleLocationsUrl)
                     .then(function(res) {
                         var vehicles = res.data.vehicle;
                         graph.append('g')
