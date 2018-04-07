@@ -67,7 +67,7 @@ angular.module(appName).directive('main', function($http) {
                         $http.get(`http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&r=${route.tag}`)
                         .then(function(res) {
                             if(typeof res.data.vehicle !== "undefined") {
-                                Route.prototype.activeRoutes.push(new Route(route));
+                                Route.prototype.activeRoutes[route.tag] = new Route(route);
                                 // above filters out routes that aren't active,
                                 // so they don't errantly show as toggle-able in route selector
                                 // TODO: dynamically update activeRoutes as routes
@@ -78,7 +78,7 @@ angular.module(appName).directive('main', function($http) {
                         .catch(function(e) {
                             // TODO: error handling
                             maybeFinish();
-                        })
+                        });
                     })
                     var processed = 0;
                     function maybeFinish() {
