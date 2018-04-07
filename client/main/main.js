@@ -89,48 +89,68 @@ angular.module(appName).directive('main', function($http) {
                             Route.prototype.doColorScale = d3.scaleOrdinal()
                                 .domain(tags)
                                 .range(['#2BD8FF', '#CEF6FF', '#DD2BFF']);
-                            Route.prototype.doRoutes();
+                            Route.prototype.initRoutes();
                         }
                     }
                 })
             }
             Route.prototype.init();
 
-            Route.prototype.doRoutes = function() {
-                graph.selectAll('.bus-route')
-                    .remove();
+            //instance Route function
+            Route.prototype.update = function() {
+                var join = this.svgGroup
+                    .selectAll('path')
+                    .data(this.vehicles);
+
+                join.enter()
+                    .append('path')
+                    .style('fill', function(d) {
+                        return Route.prototype.doColorScale(d.routeTag);
+                    })
+                    .attr('class', 'bus')
+                .merge(join)
+                    .attr('d', path);
+
+                join.exit().remove();
+            };
+
+            //static Route function
+            Route.prototype.doRoutes = function(isInit) {
                 Route.prototype.activeRoutes.forEach(function(route) {
                     $http.get(route.vehicleLocationsUrl)
                     .then(function(res) {
+                        if(isInit === true) {
+                            route.svgGroup = graph.append('g')
+                                .attr('class', `bus-route bus-route-${route.tag}`);
+                        }
                         var vehicles = res.data.vehicle;
-                        graph.append('g')
-                            .attr('class', `bus-route bus-route-${route.tag}`)
-                            .selectAll('path')
-                            .data(Route.prototype.convertToGeoPoints(vehicles, route.tag))
-                            .enter().append('path')
-                            .attr('d', path)
-                            .style('fill', function(d) {
-                                return Route.prototype.doColorScale(d.routeTag);
-                            })
-                            .attr('class', 'bus');
+                        route.vehicles =
+                            Route.prototype.convertToGeoPoints(vehicles, route.tag);
+                        route.update();
                     })
                     .catch(function(e) {
+                        //TODO: remove these vehicles from map, if exists
                         console.log(`Route ${route.tag} data could not be fetched`);
                         console.log(e);
-                    })
+                    });
                 });
             };
+            Route.prototype.initRoutes = function() {
+                Route.prototype.doRoutes(true);
+            };
+
             // setInterval(function() {
             //     Route.prototype.doRoutes();
-            // }, 7000);
+            // }, 8000);
+            // TODO: set to 15000 before submitting
 
             Route.prototype.convertToGeoPoints = function(vehicles, routeTag) {
+                var geoPoints = [];
                 if(typeof vehicles === "undefined") {
-                    return []; // handle routes that aren't active
+                    return geoPoints; // handle routes that aren't active
                     // still is useful as current code doesn't synch active routes after init,
                     // so this handles routes that become inactive after app init
                 }
-                var geoPoints = [];
                 vehicles = vehicles instanceof Array ? vehicles : [vehicles];
                 // vehicles may be just one obj instead of arr, so handling via above
                 vehicles.forEach(function(vehicle) {
@@ -144,21 +164,17 @@ angular.module(appName).directive('main', function($http) {
                     });
                 });
                 return geoPoints;
-            }
+            };
+            // TODO: genericize above, make it a part of utility module..
 
             $scope.showRoute = function(routeTag) {
                 d3.select(`g.bus-route-${routeTag}`)
                     .classed('hide', false);
-            }
+            };
             $scope.hideRoute = function(routeTag) {
                 d3.select(`g.bus-route-${routeTag}`)
                     .classed('hide', true);
-            }
-
-            // $http.get('http://webservices.nextbus.com/service/publicJSONFeed?command=routeList&a=sf-muni')
-            // .then(function(res) {
-            //     $scope.routes = res.data.route;
-            // });
+            };
 
         }
     };
