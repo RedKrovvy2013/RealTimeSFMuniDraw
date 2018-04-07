@@ -42,21 +42,15 @@ angular.module(appName).directive('main', function($http) {
                 this.tag = data.tag;
                 this.title = data.title;
             }
-
             Route.prototype.activeRoutes = [];
             $scope.activeRoutes = Route.prototype.activeRoutes;
 
-            function Bus() {
-
-            }
-
-            // Bus.prototype.urlPrefix = `http://webservices.nextbus.com/service/publicJSONFeed`;
-            // var urlPrefix = Bus.prototype.urlPrefix;
+            // Route.prototype.urlPrefix = `http://webservices.nextbus.com/service/publicJSONFeed`;
+            // var urlPrefix = Route.prototype.urlPrefix;
             // TODO: use urlPrefix instead of longer strings in call instances; wasn't working at first try
 
-            Bus.prototype.activeRoutes = Route.prototype.activeRoutes;
-            Bus.prototype.alreadyInited = false;
-            Bus.prototype.init = function() {
+            Route.prototype.alreadyInited = false;
+            Route.prototype.init = function() {
                 if(this.alreadyInited)
                     return; //guard against this being called more than once
                 this.alreadyInited = true;
@@ -87,17 +81,17 @@ angular.module(appName).directive('main', function($http) {
                             Route.prototype.activeRoutes.forEach(function(route) {
                                 tags.push(route.tag);
                             });
-                            Bus.prototype.doColorScale = d3.scaleOrdinal()
+                            Route.prototype.doColorScale = d3.scaleOrdinal()
                                 .domain(tags)
                                 .range(['#2BD8FF', '#CEF6FF', '#DD2BFF']);
-                            Bus.prototype.doBuses();
+                            Route.prototype.doRoutes();
                         }
                     }
                 })
             }
-            Bus.prototype.init();
+            Route.prototype.init();
 
-            Bus.prototype.doBuses = function() {
+            Route.prototype.doRoutes = function() {
                 graph.selectAll('.bus-route')
                     .remove();
                 Route.prototype.activeRoutes.forEach(function(route) {
@@ -107,11 +101,11 @@ angular.module(appName).directive('main', function($http) {
                         graph.append('g')
                             .attr('class', `bus-route bus-route-${route.tag}`)
                             .selectAll('path')
-                            .data(Bus.prototype.convertToGeoPoints(vehicles, route.tag))
+                            .data(Route.prototype.convertToGeoPoints(vehicles, route.tag))
                             .enter().append('path')
                             .attr('d', path)
                             .style('fill', function(d) {
-                                return Bus.prototype.doColorScale(d.routeTag);
+                                return Route.prototype.doColorScale(d.routeTag);
                             })
                             .attr('class', 'bus');
                     })
@@ -120,12 +114,12 @@ angular.module(appName).directive('main', function($http) {
                         console.log(e);
                     })
                 });
-            }
+            };
             // setInterval(function() {
-            //     Bus.prototype.doBuses();
+            //     Route.prototype.doRoutes();
             // }, 7000);
 
-            Bus.prototype.convertToGeoPoints = function(vehicles, routeTag) {
+            Route.prototype.convertToGeoPoints = function(vehicles, routeTag) {
                 if(typeof vehicles === "undefined") {
                     return []; // handle routes that aren't active
                     // still is useful as current code doesn't synch active routes after init,
