@@ -96,11 +96,18 @@ angular.module(appName).directive('main', function($http) {
             }
             Route.prototype.init();
 
-            //instance Route function
+            //instance Route function .. ooohh!
             Route.prototype.update = function() {
                 var join = this.svgGroup
                     .selectAll('path')
-                    .data(this.vehicles);
+                    .data(this.vehicles, (d)=>d.id);
+                // important: must give key above to enable animating of buses;
+                //            definitley not guaranteed that vehicles match up by index
+                //            between fetches to vehicle data
+
+                join.transition()
+                    .attr('d', path);
+                // takes care of updates to existing buses
 
                 join.enter()
                     .append('path')
@@ -108,13 +115,12 @@ angular.module(appName).directive('main', function($http) {
                         return Route.prototype.doColorScale(d.routeTag);
                     })
                     .attr('class', 'bus')
-                .merge(join)
                     .attr('d', path);
 
                 join.exit().remove();
             };
 
-            //static Route function
+            //static Route function ... yaaay!
             Route.prototype.doRoutes = function(isInit) {
                 Route.prototype.activeRoutes.forEach(function(route) {
                     $http.get(route.vehicleLocationsUrl)
@@ -139,11 +145,6 @@ angular.module(appName).directive('main', function($http) {
                 Route.prototype.doRoutes(true);
             };
 
-            // setInterval(function() {
-            //     Route.prototype.doRoutes();
-            // }, 8000);
-            // TODO: set to 15000 before submitting
-
             Route.prototype.convertToGeoPoints = function(vehicles, routeTag) {
                 var geoPoints = [];
                 if(typeof vehicles === "undefined") {
@@ -160,12 +161,18 @@ angular.module(appName).directive('main', function($http) {
                             type: "Point",
                             coordinates: [vehicle.lon, vehicle.lat]
                         },
-                        routeTag
+                        routeTag,
+                        id: vehicle.id
                     });
                 });
                 return geoPoints;
             };
             // TODO: genericize above, make it a part of utility module..
+
+            setInterval(function() {
+                Route.prototype.doRoutes();
+            }, 8000);
+            // TODO: set to 15000 before submitting
 
             $scope.showRoute = function(routeTag) {
                 d3.select(`g.bus-route-${routeTag}`)
