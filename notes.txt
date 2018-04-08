@@ -1,5 +1,0 @@
-http://webservices.nextbus.com/service/publicJSONFeed?command=routeList&a=sf-muni
-
-http://webservices.nextbus.com/service/publicJSONFeed?command=routeConfig&a=sf-muni&r=N
-
-http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&r=N

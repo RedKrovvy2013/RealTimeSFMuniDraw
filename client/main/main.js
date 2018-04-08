@@ -46,21 +46,19 @@ angular.module(appName).directive('main', function($http) {
             Route.prototype.activeRoutes = [];
             $scope.activeRoutes = Route.prototype.activeRoutes;
 
-            // Route.prototype.urlPrefix = `http://webservices.nextbus.com/service/publicJSONFeed`;
-            // var urlPrefix = Route.prototype.urlPrefix;
-            // TODO: use urlPrefix instead of longer strings in call instances; wasn't working at first try
+            var urlPrefix = "http://webservices.nextbus.com/service/publicJSONFeed";
 
             Route.prototype.alreadyInited = false;
             Route.prototype.init = function() {
                 if(this.alreadyInited)
                     return; //guard against this being called more than once
                 this.alreadyInited = true;
-                $http.get('http://webservices.nextbus.com/service/publicJSONFeed?command=routeList&a=sf-muni')
+                $http.get(`${urlPrefix}?command=routeList&a=sf-muni`)
                 .then(function(res) {
                     var routes = res.data.route;
                     routes.forEach(function(route) {
                         var vehicleLocationsUrl =
-    `http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni&r=${route.tag}`;
+                            `${urlPrefix}?command=vehicleLocations&a=sf-muni&r=${route.tag}`;
                         $http.get(vehicleLocationsUrl)
                         .then(function(res) {
                             if(typeof res.data.vehicle !== "undefined") {
@@ -82,13 +80,6 @@ angular.module(appName).directive('main', function($http) {
                     var processed = 0;
                     function maybeFinish() {
                         if(++processed === routes.length) {
-                            var tags = [];
-                            Route.prototype.activeRoutes.forEach(function(route) {
-                                tags.push(route.tag);
-                            });
-                            Route.prototype.doColorScale = d3.scaleOrdinal()
-                                .domain(tags)
-                                .range(['#2BD8FF', '#CEF6FF', '#DD2BFF']);
                             Route.prototype.initRoutes();
                         }
                     }
@@ -96,7 +87,40 @@ angular.module(appName).directive('main', function($http) {
             }
             Route.prototype.init();
 
-            //instance Route function .. ooohh!
+            Route.prototype.initRoutes = function() {
+                Route.prototype.doColorScale = d3.scaleOrdinal()
+                    .domain(
+                        Route.prototype.activeRoutes.map((route)=>route.tag)
+                    )
+                    .range(['#2BD8FF', '#CEF6FF', '#DD2BFF']);
+                // above: can only assign/evenly distribute colors once
+                //        we know how many active routes we are dealing with
+                Route.prototype.doRoutes(true);
+            };
+
+            //static Route function .. ooohh!
+            Route.prototype.doRoutes = function(isInit) {
+                Route.prototype.activeRoutes.forEach(function(route) {
+                    $http.get(route.vehicleLocationsUrl)
+                    .then(function(res) {
+                        if(isInit === true) {
+                            route.svgGroup = graph.append('g')
+                                .attr('class', `bus-route bus-route-${route.tag}`);
+                        }
+                        var vehicles = res.data.vehicle;
+                        route.vehicles =
+                            Route.prototype.convertToGeoPoints(vehicles, route.tag);
+                        route.update();
+                    })
+                    .catch(function(e) {
+                        //TODO: remove these vehicles from map, if exists
+                        console.log(`Route ${route.tag} data could not be fetched`);
+                        console.log(e);
+                    });
+                });
+            };
+
+            //instance Route function ... yaaay!
             Route.prototype.update = function() {
                 var join = this.svgGroup
                     .selectAll('path')
@@ -118,31 +142,6 @@ angular.module(appName).directive('main', function($http) {
                     .attr('d', path);
 
                 join.exit().remove();
-            };
-
-            //static Route function ... yaaay!
-            Route.prototype.doRoutes = function(isInit) {
-                Route.prototype.activeRoutes.forEach(function(route) {
-                    $http.get(route.vehicleLocationsUrl)
-                    .then(function(res) {
-                        if(isInit === true) {
-                            route.svgGroup = graph.append('g')
-                                .attr('class', `bus-route bus-route-${route.tag}`);
-                        }
-                        var vehicles = res.data.vehicle;
-                        route.vehicles =
-                            Route.prototype.convertToGeoPoints(vehicles, route.tag);
-                        route.update();
-                    })
-                    .catch(function(e) {
-                        //TODO: remove these vehicles from map, if exists
-                        console.log(`Route ${route.tag} data could not be fetched`);
-                        console.log(e);
-                    });
-                });
-            };
-            Route.prototype.initRoutes = function() {
-                Route.prototype.doRoutes(true);
             };
 
             Route.prototype.convertToGeoPoints = function(vehicles, routeTag) {
@@ -171,8 +170,8 @@ angular.module(appName).directive('main', function($http) {
 
             setInterval(function() {
                 Route.prototype.doRoutes();
-            }, 8000);
-            // TODO: set to 15000 before submitting
+            }, 15000);
+            // TODO: handle for when init calls don't finish after 15 seconds
 
             $scope.showRoute = function(routeTag) {
                 d3.select(`g.bus-route-${routeTag}`)
